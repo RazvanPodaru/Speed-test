@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network & Disk I/O Speed Tester</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 3em;
+            background: linear-gradient(45deg, #00f5ff, #0099ff, #00f5ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1) drop-shadow(0 0 20px rgba(0, 245, 255, 0.5)); }
+            50% { filter: brightness(1.2) drop-shadow(0 0 30px rgba(0, 245, 255, 0.8)); }
+        }
+
+        .subtitle {
+            color: #888;
+            font-size: 1.2em;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 10px;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 245, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tab:hover:before {
+            left: 100%;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #0099ff, #00f5ff);
+            color: #000;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0, 245, 255, 0.5);
+        }
+
+        .content-section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 245, 255, 0.2);
+            border-color: rgba(0, 245, 255, 0.3);
+        }
+
+        .mode-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .mode-btn {
+            padding: 12px 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #e0e0e0;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: rgba(0, 245, 255, 0.2);
+            border-color: #00f5ff;
+            color: #00f5ff;
+            box-shadow: 0 0 15px rgba(0, 245, 255, 0.3);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #00f5ff;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #e0e0e0;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00f5ff;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #0099ff, #00f5ff);
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 245, 255, 0.5);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e0e0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 30px;
+            font-size: 1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .results-container {
+            margin-top: 30px;
+        }
+
+        .result-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .result-item:before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00f5ff, #0099ff, #00f5ff);
+            border-radius: 15px;
+            opacity: 0;
+            z-index: -1;
+            transition: opacity 0.3s ease;
+        }
+
+        .result-item:hover:before {
+            opacity: 0.5;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-size: 1.2em;
+            color: #00f5ff;
+        }
+
+        .result-value {
+            font-size: 2em;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00f5ff, #0099ff);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00f5ff, #0099ff);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #888;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.active {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .status-dot.error {
+            background: #ff0040;
+            box-shadow: 0 0 10px #ff0040;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chart-container {
+            height: 300px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: #e0e0e0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .advanced-options {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .toggle-advanced {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            color: #00f5ff;
+            margin-bottom: 15px;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+
+        .toggle-icon.open {
+            transform: rotate(90deg);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00f5ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2em; }
+            .tabs { flex-direction: column; }
+            .mode-selector { flex-direction: column; }
+            .grid-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Speed Tester Pro</h1>
+            <p class="subtitle">Advanced Network & Disk I/O Performance Testing</p>
+        </header>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('network')">Network Testing</button>
+            <button class="tab" onclick="switchTab('disk')">Disk I/O Testing</button>
+            <button class="tab" onclick="switchTab('results')">Results & Analytics</button>
+        </div>
+
+        <!-- Network Testing Section -->
+        <div id="network" class="content-section active">
+            <div class="card">
+                <h2>Network Speed Test Configuration</h2>
+                
+                <div class="mode-selector">
+                    <button class="mode-btn active" onclick="setNetworkMode('client')">Client Mode</button>
+                    <button class="mode-btn" onclick="setNetworkMode('server')">Server Mode</button>
+                </div>
+
+                <div id="client-config">
+                    <div class="form-group">
+                        <label for="server-host">Server Host/IP</label>
+                        <input type="text" id="server-host" placeholder="192.168.1.100 or hostname" value="localhost">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="server-port">Server Port</label>
+                        <input type="number" id="server-port" placeholder="5201" value="5201">
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label for="test-duration">Test Duration (seconds)</label>
+                            <input type="number" id="test-duration" value="10" min="1" max="3600">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="parallel-streams">Parallel Streams</label>
+                            <input type="number" id="parallel-streams" value="1" min="1" max="128">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="protocol">Protocol</label>
+                        <select id="protocol">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="sctp">SCTP</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="test-type">Test Type</label>
+                        <select id="test-type">
+                            <option value="normal">Normal (upload)</option>
+                            <option value="reverse">Reverse (download)</option>
+                            <option value="bidirectional">Bidirectional</option>
+                        </select>
+                    </div>
+
+                    <div class="advanced-options">
+                        <div class="toggle-advanced" onclick="toggleAdvanced('network')">
+                            <span class="toggle-icon">▶</span>
+                            <span>Advanced Options</span>
+                        </div>
+                        
+                        <div id="network-advanced" style="display: none;">
+                            <div class="grid-2">
+                                <div class="form-group">
+                                    <label for="buffer-size">Buffer Size (KB)</label>
+                                    <input type="number" id="buffer-size" value="128" min="1">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="window-size">Window Size (KB)</label>
+                                    <input type="number" id="window-size" value="64" min="1">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="mss">MSS (bytes)</label>
+                                    <input type="number" id="mss" value="1460" min="1">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="bandwidth">Target Bandwidth (Mbps)</label>
+                                    <input type="number" id="bandwidth" placeholder="0 for unlimited" value="0">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="no-delay">
+                                    No Delay (disable Nagle's algorithm)
+                                </label>
+                            </div>
+
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="zero-copy">
+                                    Zero Copy (sendfile)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn-primary" onclick="startNetworkTest()">Start Network Test</button>
+                </div>
+
+                <div id="server-config" style="display: none;">
+                    <div class="form-group">
+                        <label for="listen-port">Listen Port</label>
+                        <input type="number" id="listen-port" value="5201">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="bind-address">Bind Address</label>
+                        <input type="text" id="bind-address" placeholder="0.0.0.0" value="0.0.0.0">
+                    </div>
+
+                    <button class="btn-primary" onclick="startNetworkServer()">Start Server</button>
+                </div>
+            </div>
+
+            <div class="results-container" id="network-results" style="display: none;">
+                <div class="card">
+                    <h3>Test Results</h3>
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Throughput</span>
+                            <span class="result-value" id="throughput">0 Mbps</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="throughput-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Latency</span>
+                            <span class="result-value" id="latency">0 ms</span>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Jitter</span>
+                            <span class="result-value" id="jitter">0 ms</span>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Packet Loss</span>
+                            <span class="result-value" id="packet-loss">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disk I/O Testing Section -->
+        <div id="disk" class="content-section">
+            <div class="card">
+                <h2>Disk I/O Performance Test</h2>
+
+                <div class="form-group">
+                    <label for="io-test-type">Test Type</label>
+                    <select id="io-test-type">
+                        <option value="seq-read">Sequential Read</option>
+                        <option value="seq-write">Sequential Write</option>
+                        <option value="rand-read">Random Read</option>
+                        <option value="rand-write">Random Write</option>
+                        <option value="rand-rw">Random Read/Write</option>
+                    </select>
+                </div>
+
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="file-size">File Size (MB)</label>
+                        <input type="number" id="file-size" value="1024" min="1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="block-size">Block Size (KB)</label>
+                        <select id="block-size">
+                            <option value="4">4 KB</option>
+                            <option value="8">8 KB</option>
+                            <option value="16">16 KB</option>
+                            <option value="32">32 KB</option>
+                            <option value="64">64 KB</option>
+                            <option value="128">128 KB</option>
+                            <option value="256">256 KB</option>
+                            <option value="512">512 KB</option>
+                            <option value="1024">1 MB</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="io-depth">I/O Depth (Queue Depth)</label>
+                    <input type="number" id="io-depth" value="32" min="1" max="256">
+                </div>
+
+                <div class="form-group">
+                    <label for="num-jobs">Number of Jobs (Threads)</label>
+                    <input type="number" id="num-jobs" value="1" min="1" max="32">
+                </div>
+
+                <div class="advanced-options">
+                    <div class="toggle-advanced" onclick="toggleAdvanced('disk')">
+                        <span class="toggle-icon">▶</span>
+                        <span>Advanced Options</span>
+                    </div>
+                    
+                    <div id="disk-advanced" style="display: none;">
+                        <div class="form-group">
+                            <label for="io-engine">I/O Engine</label>
+                            <select id="io-engine">
+                                <option value="sync">Sync</option>
+                                <option value="async">Async</option>
+                                <option value="libaio">Linux AIO</option>
+                                <option value="posixaio">POSIX AIO</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="direct-io">
+                                Direct I/O (bypass cache)
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="verify-data">
+                                Verify Data Integrity
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="runtime">Runtime (seconds)</label>
+                            <input type="number" id="runtime" value="60" min="1">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-primary" onclick="startDiskTest()">Start Disk I/O Test</button>
+            </div>
+
+            <div class="results-container" id="disk-results" style="display: none;">
+                <div class="card">
+                    <h3>Disk I/O Results</h3>
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Read Speed</span>
+                            <span class="result-value" id="read-speed">0 MB/s</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="read-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Write Speed</span>
+                            <span class="result-value" id="write-speed">0 MB/s</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="write-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">IOPS</span>
+                            <span class="result-value" id="iops">0</span>
+                        </div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-title">Latency</span>
+                            <span class="result-value" id="io-latency">0 μs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results & Analytics Section -->
+        <div id="results" class="content-section">
+            <div class="card">
+                <h2>Test History & Analytics</h2>
+                <div class="chart-container" id="chart-container">
+                    <canvas id="performance-chart"></canvas>
+                </div>
+                
+                <div class="grid-2" style="margin-top: 30px;">
+                    <button class="btn-secondary" onclick="exportResults()">Export Results (JSON)</button>
+                    <button class="btn-secondary" onclick="clearHistory()">Clear History</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Test Sessions</h3>
+                <div id="test-history">
+                    <p style="color: #888;">No test results yet. Run some tests to see history.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script>
+        // State management
+        let currentTab = 'network';
+        let networkMode = 'client';
+        let testResults = [];
+        let isTestRunning = false;
+
+        // Tab switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+            currentTab = tab;
+
+            if (tab === 'results') {
+                updateChart();
+            }
+        }
+
+        // Network mode switching
+        function setNetworkMode(mode) {
+            networkMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (mode === 'client') {
+                document.getElementById('client-config').style.display = 'block';
+                document.getElementById('server-config').style.display = 'none';
+            } else {
+                document.getElementById('client-config').style.display = 'none';
+                document.getElementById('server-config').style.display = 'block';
+            }
+        }
+
+        // Toggle advanced options
+        function toggleAdvanced(section) {
+            const advanced = document.getElementById(`${section}-advanced`);
+            const icon = event.target.closest('.toggle-advanced').querySelector('.toggle-icon');
+            
+            if (advanced.style.display === 'none') {
+                advanced.style.display = 'block';
+                icon.classList.add('open');
+            } else {
+                advanced.style.display = 'none';
+                icon.classList.remove('open');
+            }
+        }
+
+        // Network test simulation
+        async function startNetworkTest() {
+            if (isTestRunning) return;
+            
+            isTestRunning = true;
+            showLoading(true);
+            
+            const config = {
+                host: document.getElementById('server-host').value,
+                port: document.getElementById('server-port').value,
+                duration: parseInt(document.getElementById('test-duration').value),
+                streams: parseInt(document.getElementById('parallel-streams').value),
+                protocol: document.getElementById('protocol').value,
+                type: document.getElementById('test-type').value,
+                bufferSize: parseInt(document.getElementById('buffer-size').value),
+                windowSize: parseInt(document.getElementById('window-size').value),
+                mss: parseInt(document.getElementById('mss').value),
+                bandwidth: parseInt(document.getElementById('bandwidth').value),
+                noDelay: document.getElementById('no-delay').checked,
+                zeroCopy: document.getElementById('zero-copy').checked
+            };
+
+            // Show results container
+            document.getElementById('network-results').style.display = 'block';
+
+            // Simulate test progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 100 / (config.duration * 10);
+                if (progress > 100) progress = 100;
+
+                // Update simulated results
+                const throughput = Math.random() * 900 + 100; // 100-1000 Mbps
+                const latency = Math.random() * 50 + 1; // 1-50 ms
+                const jitter = Math.random() * 5; // 0-5 ms
+                const packetLoss = Math.random() * 2; // 0-2%
+
+                document.getElementById('throughput').textContent = `${throughput.toFixed(2)} Mbps`;
+                document.getElementById('throughput-progress').style.width = `${progress}%`;
+                document.getElementById('latency').textContent = `${latency.toFixed(2)} ms`;
+                document.getElementById('jitter').textContent = `${jitter.toFixed(2)} ms`;
+                document.getElementById('packet-loss').textContent = `${packetLoss.toFixed(2)}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showLoading(false);
+                    isTestRunning = false;
+
+                    // Save results
+                    const result = {
+                        type: 'network',
+                        timestamp: new Date().toISOString(),
+                        config: config,
+                        results: {
+                            throughput: parseFloat(throughput.toFixed(2)),
+                            latency: parseFloat(latency.toFixed(2)),
+                            jitter: parseFloat(jitter.toFixed(2)),
+                            packetLoss: parseFloat(packetLoss.toFixed(2))
+                        }
+                    };
+                    testResults.push(result);
+                    updateTestHistory();
+                }
+            }, 100);
+        }
+
+        // Network server simulation
+        function startNetworkServer() {
+            if (isTestRunning) return;
+            
+            const port = document.getElementById('listen-port').value;
+            const bindAddress = document.getElementById('bind-address').value;
+            
+            alert(`Server mode would start listening on ${bindAddress}:${port}\nThis is a simulation - actual network testing requires backend implementation.`);
+        }
+
+        // Disk I/O test simulation
+        async function startDiskTest() {
+            if (isTestRunning) return;
+            
+            isTestRunning = true;
+            showLoading(true);
+            
+            const config = {
+                testType: document.getElementById('io-test-type').value,
+                fileSize: parseInt(document.getElementById('file-size').value),
+                blockSize: parseInt(document.getElementById('block-size').value),
+                ioDepth: parseInt(document.getElementById('io-depth').value),
+                numJobs: parseInt(document.getElementById('num-jobs').value),
+                ioEngine: document.getElementById('io-engine').value,
+                directIO: document.getElementById('direct-io').checked,
+                verifyData: document.getElementById('verify-data').checked,
+                runtime: parseInt(document.getElementById('runtime').value)
+            };
+
+            // Show results container
+            document.getElementById('disk-results').style.display = 'block';
+
+            // Simulate test progress
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 100 / (config.runtime * 10);
+                if (progress > 100) progress = 100;
+
+                // Update simulated results based on test type
+                let readSpeed = 0, writeSpeed = 0;
+                
+                switch(config.testType) {
+                    case 'seq-read':
+                        readSpeed = Math.random() * 500 + 500; // 500-1000 MB/s
+                        break;
+                    case 'seq-write':
+                        writeSpeed = Math.random() * 400 + 400; // 400-800 MB/s
+                        break;
+                    case 'rand-read':
+                        readSpeed = Math.random() * 200 + 100; // 100-300 MB/s
+                        break;
+                    case 'rand-write':
+                        writeSpeed = Math.random() * 150 + 50; // 50-200 MB/s
+                        break;
+                    case 'rand-rw':
+                        readSpeed = Math.random() * 150 + 100; // 100-250 MB/s
+                        writeSpeed = Math.random() * 100 + 50; // 50-150 MB/s
+                        break;
+                }
+
+                const iops = Math.floor((readSpeed + writeSpeed) * 1024 / config.blockSize * Math.random() * 0.8 + 0.2);
+                const latency = Math.random() * 1000 + 100; // 100-1100 μs
+
+                document.getElementById('read-speed').textContent = `${readSpeed.toFixed(2)} MB/s`;
+                document.getElementById('read-progress').style.width = readSpeed > 0 ? `${progress}%` : '0%';
+                document.getElementById('write-speed').textContent = `${writeSpeed.toFixed(2)} MB/s`;
+                document.getElementById('write-progress').style.width = writeSpeed > 0 ? `${progress}%` : '0%';
+                document.getElementById('iops').textContent = iops.toLocaleString();
+                document.getElementById('io-latency').textContent = `${latency.toFixed(0)} μs`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    showLoading(false);
+                    isTestRunning = false;
+
+                    // Save results
+                    const result = {
+                        type: 'disk',
+                        timestamp: new Date().toISOString(),
+                        config: config,
+                        results: {
+                            readSpeed: parseFloat(readSpeed.toFixed(2)),
+                            writeSpeed: parseFloat(writeSpeed.toFixed(2)),
+                            iops: iops,
+                            latency: parseFloat(latency.toFixed(0))
+                        }
+                    };
+                    testResults.push(result);
+                    updateTestHistory();
+                }
+            }, 100);
+        }
+
+        // Update test history display
+        function updateTestHistory() {
+            const historyContainer = document.getElementById('test-history');
+            
+            if (testResults.length === 0) {
+                historyContainer.innerHTML = '<p style="color: #888;">No test results yet. Run some tests to see history.</p>';
+                return;
+            }
+
+            historyContainer.innerHTML = testResults.slice().reverse().map((result, index) => {
+                const date = new Date(result.timestamp);
+                const formattedDate = date.toLocaleString();
+                
+                let summary = '';
+                if (result.type === 'network') {
+                    summary = `
+                        <div class="result-item">
+                            <div class="result-header">
+                                <span class="result-title">Network Test - ${formattedDate}</span>
+                                <span class="status-indicator">
+                                    <span class="status-dot"></span>
+                                    Completed
+                                </span>
+                            </div>
+                            <div style="margin-top: 10px; color: #aaa;">
+                                <div>Host: ${result.config.host}:${result.config.port}</div>
+                                <div>Throughput: ${result.results.throughput} Mbps | Latency: ${result.results.latency} ms</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    summary = `
+                        <div class="result-item">
+                            <div class="result-header">
+                                <span class="result-title">Disk I/O Test - ${formattedDate}</span>
+                                <span class="status-indicator">
+                                    <span class="status-dot"></span>
+                                    Completed
+                                </span>
+                            </div>
+                            <div style="margin-top: 10px; color: #aaa;">
+                                <div>Type: ${result.config.testType} | Block Size: ${result.config.blockSize} KB</div>
+                                <div>Read: ${result.results.readSpeed} MB/s | Write: ${result.results.writeSpeed} MB/s | IOPS: ${result.results.iops}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                return summary;
+            }).join('');
+        }
+
+        // Chart update function
+        function updateChart() {
+            const canvas = document.getElementById('performance-chart');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if (testResults.length === 0) {
+                ctx.fillStyle = '#888';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data to display', canvas.width / 2, canvas.height / 2);
+                return;
+            }
+            
+            // Simple line chart for network throughput over time
+            const networkResults = testResults.filter(r => r.type === 'network').slice(-10);
+            
+            if (networkResults.length > 0) {
+                const margin = 40;
+                const chartWidth = canvas.width - margin * 2;
+                const chartHeight = canvas.height - margin * 2;
+                
+                // Find max throughput
+                const maxThroughput = Math.max(...networkResults.map(r => r.results.throughput));
+                
+                // Draw axes
+                ctx.strokeStyle = '#444';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(margin, margin);
+                ctx.lineTo(margin, canvas.height - margin);
+                ctx.lineTo(canvas.width - margin, canvas.height - margin);
+                ctx.stroke();
+                
+                // Draw grid lines
+                ctx.strokeStyle = '#222';
+                ctx.setLineDash([5, 5]);
+                for (let i = 0; i <= 5; i++) {
+                    const y = margin + (chartHeight * i / 5);
+                    ctx.beginPath();
+                    ctx.moveTo(margin, y);
+                    ctx.lineTo(canvas.width - margin, y);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                
+                // Draw line chart
+                ctx.strokeStyle = '#00f5ff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                
+                networkResults.forEach((result, index) => {
+                    const x = margin + (chartWidth * index / (networkResults.length - 1));
+                    const y = canvas.height - margin - (result.results.throughput / maxThroughput * chartHeight);
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    // Draw point
+                    ctx.fillStyle = '#00f5ff';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 5, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                ctx.stroke();
+                
+                // Draw labels
+                ctx.fillStyle = '#e0e0e0';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Network Throughput History (Mbps)', canvas.width / 2, 20);
+            }
+        }
+
+        // Export results
+        function exportResults() {
+            if (testResults.length === 0) {
+                alert('No results to export');
+                return;
+            }
+            
+            const dataStr = JSON.stringify(testResults, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const exportFileDefaultName = `speed-test-results-${new Date().toISOString().slice(0, 10)}.json`;
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        // Clear history
+        function clearHistory() {
+            if (confirm('Are you sure you want to clear all test history?')) {
+                testResults = [];
+                updateTestHistory();
+                updateChart();
+            }
+        }
+
+        // Loading overlay
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTestHistory();
+        });
+    </script>
+</body>
+</html> 
